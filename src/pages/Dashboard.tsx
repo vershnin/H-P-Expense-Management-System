@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import type { User } from "@/types";
 
 import {
   Select,
@@ -25,7 +26,6 @@ import {
   BarChart3,
   Users,
   LogOut,
-  User,
   X,
   FileImage,
   Upload,
@@ -100,9 +100,11 @@ interface Policy {
   category?: string;
   location?: string;
 }
-
-const Dashboard = () => {
-  const { user, logout } = useAuth();
+interface DashboardProps {
+  user: User;
+  onLogout: () => void;
+}
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
   // Type guard to ensure user exists
   if (!user) {
@@ -512,7 +514,7 @@ const Dashboard = () => {
               <Plus className="h-4 w-4 mr-2" />
               New Expense
             </Button>
-            <Button variant="outline" size="sm" onClick={logout}>
+            <Button variant="outline" size="sm" onClick={onLogout}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
@@ -716,7 +718,6 @@ const Dashboard = () => {
                     )
                   }
                 >
-                  <User className="h-6 w-6 mb-2" />
                   <span className="text-sm">
                     {user.role === "admin" || user.role === "manager"
                       ? "Manage Approvals"

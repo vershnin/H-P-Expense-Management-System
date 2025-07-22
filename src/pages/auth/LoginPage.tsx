@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, Building, Shield, Mail, Lock } from "lucide-react";
+import { User } from "@/types";
 
 interface LoginPageProps {
-  onLogin: (userData: any) => void;
+  onLogin: (user: User) => void;
 }
 
-const LoginPage = ({ onLogin }: LoginPageProps) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
@@ -28,34 +29,37 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    // API
+
+    
 
     // Simulate authentication
-    setTimeout(() => {
-      const userData = {
-        email,
-        role,
-        name: "John Doe",
-        location: "Nairobi Central Branch",
-        permissions: getPermissions(role)
-      };
-      onLogin(userData);
-      setIsLoading(false);
-    }, 1000);
-  };
+  //   setTimeout(() => {
+  //     const userData = {
+  //       id: "1",
+  //       email,
+  //       role,
+  //       name: "Richard G",
+  //       permissions: getPermissions(role)
+  //     };
+  //     onLogin(userData);
+  //     setIsLoading(false);
+  //   }, 1000);
+  // };
 
-  const getPermissions = (userRole: string) => {
-    switch (userRole) {
-      case "admin":
-        return ["all"];
-      case "finance":
-        return ["view_all", "create_float", "approve_expenses", "generate_reports"];
-      case "branch":
-        return ["view_branch", "record_expense", "view_reports"];
-      case "auditor":
-        return ["view_all", "generate_reports", "audit_trail"];
-      default:
-        return ["view_branch"];
-    }
+  // const getPermissions = (userRole: string) => {
+  //   switch (userRole) {
+  //     case "admin":
+  //       return ["all"];
+  //     case "finance":
+  //       return ["view_all", "create_float", "approve_expenses", "generate_reports"];
+  //     case "branch":
+  //       return ["view_branch", "record_expense", "view_reports"];
+  //     case "auditor":
+  //       return ["view_all", "generate_reports", "audit_trail"];
+  //     default:
+  //       return ["view_branch"];
+  //   }
   };
 
   return (
@@ -65,7 +69,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
         <div className="text-center mb-8">
           <div className="mx-auto w-48 h-48 mb-4">
             <img
-              src="/hal_logo_320x132.png"  // Update with your actual logo path
+              src="/hal_logo_320x132.png" 
               alt="Company Logo"
               className="w-full h-full object-contain"  // Maintains aspect ratio
             />
@@ -92,6 +96,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
                 <Input
                   id="email"
                   type="email"
+                  name="email"
                   placeholder="username@hotpoint.co.ke"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -110,6 +115,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    name="password"
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -138,7 +144,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
                   <Shield className="h-4 w-4" />
                   Access Role
                 </Label>
-                <Select value={role} onValueChange={setRole} required>
+                <Select value={role} onValueChange={setRole} name="role" required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
