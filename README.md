@@ -51,7 +51,4 @@ This project is built with:
 - TypeScript
 - React
 - shadcn-ui
-- Tailwind CSS
-
-
-Simply open [Lovable](https://lovable.dev/projects/796fe727-0306-4c01-aec7-811224ea7cbd) and cl
+- Tailwind CSS 
