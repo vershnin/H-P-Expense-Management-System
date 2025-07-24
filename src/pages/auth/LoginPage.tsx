@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, Building, Shield, Mail, Lock } from "lucide-react";
-import { User } from "@/types";
+import { User } from "types";
 
 interface LoginPageProps {
   onLogin: (user: User) => void;

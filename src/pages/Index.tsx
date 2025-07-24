@@ -1,7 +1,7 @@
 import { useState } from "react";
 import LoginPage from "@/pages/auth/LoginPage";
 import Dashboard from "@/pages/Dashboard";
-import { User } from "@/types";
+import { User } from "types";
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
