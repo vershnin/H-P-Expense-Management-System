@@ -1,18 +1,21 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, Building, Shield, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, Shield, Mail, Lock } from "lucide-react";
 import { User } from "types";
+import { login } from "../../api/auth";
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
@@ -29,37 +32,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // API
-
-    
-
-    // Simulate authentication
-  //   setTimeout(() => {
-  //     const userData = {
-  //       id: "1",
-  //       email,
-  //       role,
-  //       name: "Richard G",
-  //       permissions: getPermissions(role)
-  //     };
-  //     onLogin(userData);
-  //     setIsLoading(false);
-  //   }, 1000);
-  // };
-
-  // const getPermissions = (userRole: string) => {
-  //   switch (userRole) {
-  //     case "admin":
-  //       return ["all"];
-  //     case "finance":
-  //       return ["view_all", "create_float", "approve_expenses", "generate_reports"];
-  //     case "branch":
-  //       return ["view_branch", "record_expense", "view_reports"];
-  //     case "auditor":
-  //       return ["view_all", "generate_reports", "audit_trail"];
-  //     default:
-  //       return ["view_branch"];
-  //   }
+    try {
+      const userData = await login(email, password);
+      onLogin(userData.user);
+      navigate("/dashboard");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Login failed");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -480,6 +480,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               src="/hal_logo_320x132.png"
               alt="Hotpoint Logo"
               className="h-14 w-auto"
+              style={{ maxHeight: "60px", objectFit: "contain" }}
             />
             <div>
               <h1 className="text-xl font-bold">Expense Management System</h1>
