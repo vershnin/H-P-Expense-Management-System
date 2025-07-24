@@ -3,8 +3,8 @@ import bcrypt
 import logging
 
 def get_db_connection():
-    server = "DESKTOP-0FRFNEU\\MSAS16MSA16"  # replace with your actual server name
-    database = "StockApp"
+    server = "HOTPOINT11-20\\SQLEXPRESS"  # replace with your actual server name
+    database = "hotpoint_db"
     
     drivers = [d for d in pyodbc.drivers() if 'SQL Server' in d]
     if not drivers:
