@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 import bcrypt
 import logging
-from flask_cors import CORS
+from flask_cors import CORS # Enable CORS to allow cross-origin requests from frontend clients
 
 load_dotenv()
 

@@ -4,11 +4,8 @@ import { useState } from "react";
 import Login from "./pages/auth/LoginPage";
 import Dashboard from "./pages/Dashboard";
 
-// Define a User type — adjust as needed
-type User = {
-  name: string;
-  email: string;
-};
+// Import the User type from your types folder
+import type { User } from "../types";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
