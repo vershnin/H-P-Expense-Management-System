@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
-import type { User } from "types";
+import { useAuth } from "@/context/AuthContext";
+import type { User } from "@/types";
 
 import {
   Select,
@@ -19,6 +20,11 @@ import {
   TrendingDown,
   Building,
   Plus,
+  Calendar,
+  Phone,
+  MapPin,
+  Shield,
+
   Search,
   Filter,
   PieChart,
@@ -99,11 +105,13 @@ interface Policy {
   category?: string;
   location?: string;
 }
+
 interface DashboardProps {
   user: User;
   onLogout: () => void;
 }
-const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
+const Dashboard: React.FC = ()  => {
+  const { user, logout } = useAuth();
 
   // Type guard to ensure user exists
   if (!user) {
@@ -112,7 +120,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
   // Now TypeScript knows user exists and has the User type
   const userRole = user.role;
-  const userName = user.name;
+  const userName = `${user.firstName} ${user.lastName}`;
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -407,7 +415,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setExpenses(
       expenses.map((e) =>
         e.id === expenseId
-          ? { ...e, status: "approved", approver: user?.name }
+          ? { ...e, status: "approved", approver: `${user.firstName} ${user.lastName}` }
           : e
       )
     );
@@ -420,7 +428,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           ? {
               ...e,
               status: "rejected",
-              approver: user?.name,
+              approver: `${user.firstName} ${user.lastName}`,
               violationReason: reason,
             }
           : e
@@ -452,12 +460,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setAdditionalFiles([]);
   };
 
-  // Add new tab for approvals if user is manager/admin
+  // Add new tab for approvals if user is branch manager/admin
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "floats", label: "Float Management" },
     { id: "expenses", label: "Expense Tracking" },
-    ...(user?.role === "manager" || user?.role === "admin"
+    ...(user?.role === "branch" || user?.role === "admin"
       ? [{ id: "approvals", label: "Approvals" }]
       : []),
     { id: "reports", label: "Reports" },
@@ -486,9 +494,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               <p className="text-sm text-muted-foreground">
                 {user.role === "admin"
                   ? "Administrator Dashboard"
-                  : user.role === "manager"
-                  ? "Manager Dashboard"
-                  : "Employee Dashboard"}
+                  : user.role === "branch"
+                  ? "Branch Manager Dashboard"
+                  : "Auditor Dashboard"}
               </p>
             </div>
           </div>
@@ -496,7 +504,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <div className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg">
               <UserIcon className="h-4 w-4 text-secondary-foreground" />
               <span className="text-sm font-medium text-secondary-foreground">
-                {user.name}
+                {userName}
               </span>
               <Badge variant="outline" className="text-xs">
                 {user.role?.toUpperCase()}
@@ -514,7 +522,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               <Plus className="h-4 w-4 mr-2" />
               New Expense
             </Button>
-            <Button variant="outline" size="sm" onClick={onLogout}>
+            <Button variant="outline" size="sm" onClick={logout}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
@@ -712,14 +720,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                   className="h-20 flex-col"
                   onClick={() =>
                     setActiveTab(
-                      user.role === "admin" || user.role === "manager"
+                      user.role === "admin" || user.role === "branch"
                         ? "approvals"
                         : "profile"
                     )
                   }
                 >
                   <span className="text-sm">
-                    {user.role === "admin" || user.role === "manager"
+                    {user.role === "admin" || user.role === "branch"
                       ? "Manage Approvals"
                       : "My Profile"}
                   </span>
@@ -893,7 +901,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       )}
 
       {activeTab === "approvals" &&
-        (user.role === "manager" || user.role === "admin") && (
+        (user.role === "branch" || user.role === "admin") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1620,13 +1628,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               )}
             </div>
             <DialogFooter>
-              {user.role === "manager" &&
+              {user.role === "branch" &&
                 selectedExpense.status === "pending" && (
                   <>
                     <Button
                       variant="outline"
                       onClick={() =>
-                        rejectExpense(selectedExpense.id, "Rejected by manager")
+                        rejectExpense(selectedExpense.id, "Rejected by branch manager")
                       }
                     >
                       Reject

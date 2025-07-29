@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Shield, Mail, Lock, User, Phone, Building2, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Shield, Mail, Lock, User, Phone, Building2, ArrowLeft, Building, AlertCircle, Check } from "lucide-react";
 import { signup } from "../../api/auth";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SignUpPageProps {
   onSignUp?: (user: any) => void;
@@ -24,14 +26,16 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
     password: "",
     confirmPassword: "",
     role: "",
-    branch: "",
-    employeeId: ""
+    department: "",
+    branchlocation: ""
   });
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const roles = [
     { value: "admin", label: "System Administrator", color: "destructive" },
@@ -40,54 +44,67 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
     { value: "auditor", label: "Auditor", color: "warning" }
   ];
 
-  const branches = [
-    "Head Office - Nairobi",
-    "Westlands Branch",
-    "Mombasa Branch", 
-    "Kisumu Branch",
-    "Nakuru Branch",
-    "Eldoret Branch",
-    "Thika Branch"
+  const departments = [
+    "Finance",
+    "Operations",
+    "Sales",
+    "Marketing",
+    "Human Resources",
+    "IT Support",
+    "Audit & Compliance",
+    "Warehouse Management",
+    "Service center",
+    "Modern Trade",
+    "Retail Sales",
   ];
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.firstName.trim()) newErrors.firstName = "First name is required";
-    if (!formData.lastName.trim()) newErrors.lastName = "Last name is required";
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!/^(\+254|0)[17]\d{8}$/.test(formData.phone)) {
-      newErrors.phone = "Please enter a valid Kenyan phone number";
-    }
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters long";
-    }
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-    if (!formData.role) newErrors.role = "Please select a role";
-    if (!formData.branch) newErrors.branch = "Please select a branch";
-    if (!formData.employeeId.trim()) newErrors.employeeId = "Employee ID is required";
-    if (!agreeToTerms) newErrors.terms = "You must agree to the terms and conditions";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const branches = [
+    "SALES - CORPORATE SALES",
+    "HEAD OFFICE FINANCE LOCATION",
+    "SALES EXPORTS",
+    "ENGINEERING INSTALLATIONS - NAIROBI",
+    "ENGINEERING INSTALLATIONS - MOMBASA",
+    "BONDED WAREHOUSE RUIRU NO. 577 - BW3",
+    "WAREHOUSE RUIRU - RHW1",
+    "SALES - ONLINE SALES",
+    "SHOWROOM SARIT CENTRE - SCR",
+    "SHOWROOM LIKONI MALL MOMBASA - MSR",
+    "CLEARANCE SALE",
+    "SHOWROOM GARDEN CITY - GCS",
+    "SHOWROOM VILLAGE MARKET - VMR",
+    "SHOWROOM NYALI CENTRE MOMBASA - MSN",
+    "SHOWROOM RUIRU D02 SALES - RHSR2",
+    "SHOWROOM IMARA MALL - IMR",
+    "SHOWROOM BINAA COMPLEX KAREN - KRN",
+    "SHOWROOM CBD 680 HOTEL - CBD",
+    "SHOWROOM ELDORET RUPAS MALL - ELD",
+    "SHOWROOM YAYA CENTER - YCR",
+    "SHOWROOM VICTORIA SQUARE RIARA - RSR",
+    "SHOWROOM MEGA CITY KISUMU - KSM",
+    "SERVICE CENTRE LIKONI MOMBASA - MSS",
+    "SERVICE SARIT CENTRE - SCP",
+    "SERVICE HEAD OFFICE RUIRU - SCS"
+  ];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+    if (error) setError("");
+  };
+
+  const validateForm = () => {
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return false;
     }
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return false;
+    }
+    if (!acceptTerms) {
+      setError("Please accept the terms and conditions");
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,31 +113,53 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setError("");
+    
     try {
-      const userData = await signup({
+      await signup({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
         role: formData.role,
-        branch: formData.branch,
-        employeeId: formData.employeeId
+        department: formData.department,
+        branchlocation: formData.branchlocation
       });
       
-      if (onSignUp) {
-        onSignUp(userData.user);
-      }
-      
-      // Show success message and redirect to login
-      alert("Account created successfully! Please sign in with your credentials.");
-      navigate("/login");
+      setSuccess("Account created successfully! Please check your email for verification.");
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Sign up failed");
+      setError(error instanceof Error ? error.message : "Sign up failed");
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/20 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-elevated border-0">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <Check className="h-8 w-8 text-green-600" />
+              </div>
+              <CardTitle className="text-2xl text-green-700">Account Created!</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-muted-foreground mb-4">{success}</p>
+              <p className="text-sm text-muted-foreground">
+                Redirecting to login page...
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/20 flex items-center justify-center p-4">
@@ -135,28 +174,29 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
             />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Create your account to access financial tracking system
+            Create your account to access the financial tracking system
           </p>
         </div>
 
         {/* Sign Up Card */}
         <Card className="shadow-elevated border-0">
           <CardHeader className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate("/login")}
-                className="p-1"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <CardTitle className="text-2xl">Create Account</CardTitle>
-            </div>
+            <CardTitle className="text-2xl text-center">Create Account</CardTitle>
+            <p className="text-center text-sm text-muted-foreground">
+              Fill in your details to get started
+            </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Name Fields */}
+              {/* Error Alert */}
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* Personal Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName" className="flex items-center gap-2">
@@ -166,46 +206,41 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
                   <Input
                     id="firstName"
                     type="text"
-                    placeholder="Enter first name"
+                    placeholder="John"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    className={errors.firstName ? "border-red-500" : ""}
+                    required
                   />
-                  {errors.firstName && <p className="text-sm text-red-500">{errors.firstName}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
                     type="text"
-                    placeholder="Enter last name"
+                    placeholder="Doe"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    className={errors.lastName ? "border-red-500" : ""}
+                    required
                   />
-                  {errors.lastName && <p className="text-sm text-red-500">{errors.lastName}</p>}
                 </div>
               </div>
 
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Email Address
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="firstname.lastname@hotpoint.co.ke"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  className={errors.email ? "border-red-500" : ""}
-                />
-                {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
-              </div>
-
-              {/* Phone and Employee ID */}
+              {/* Contact Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email Address
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="john.doe@hotpoint.co.ke"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    required
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="flex items-center gap-2">
                     <Phone className="h-4 w-4" />
@@ -214,77 +249,11 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="+254712345678"
+                    placeholder="+254 700 000 000"
                     value={formData.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className={errors.phone ? "border-red-500" : ""}
+                    required
                   />
-                  {errors.phone && <p className="text-sm text-red-500">{errors.phone}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="employeeId">Employee ID</Label>
-                  <Input
-                    id="employeeId"
-                    type="text"
-                    placeholder="HAL001"
-                    value={formData.employeeId}
-                    onChange={(e) => handleInputChange("employeeId", e.target.value)}
-                    className={errors.employeeId ? "border-red-500" : ""}
-                  />
-                  {errors.employeeId && <p className="text-sm text-red-500">{errors.employeeId}</p>}
-                </div>
-              </div>
-
-              {/* Role and Branch */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Shield className="h-4 w-4" />
-                    Role
-                  </Label>
-                  <Select 
-                    value={formData.role} 
-                    onValueChange={(value) => handleInputChange("role", value)}
-                  >
-                    <SelectTrigger className={errors.role ? "border-red-500" : ""}>
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map((roleOption) => (
-                        <SelectItem key={roleOption.value} value={roleOption.value}>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={roleOption.color as any} className="text-xs">
-                              {roleOption.value.toUpperCase()}
-                            </Badge>
-                            {roleOption.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.role && <p className="text-sm text-red-500">{errors.role}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Branch
-                  </Label>
-                  <Select 
-                    value={formData.branch} 
-                    onValueChange={(value) => handleInputChange("branch", value)}
-                  >
-                    <SelectTrigger className={errors.branch ? "border-red-500" : ""}>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch} value={branch}>
-                          {branch}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.branch && <p className="text-sm text-red-500">{errors.branch}</p>}
                 </div>
               </div>
 
@@ -299,10 +268,11 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter password"
+                      placeholder="Minimum 8 characters"
                       value={formData.password}
                       onChange={(e) => handleInputChange("password", e.target.value)}
-                      className={`pr-10 ${errors.password ? "border-red-500" : ""}`}
+                      required
+                      className="pr-10"
                     />
                     <Button
                       type="button"
@@ -318,7 +288,6 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
                       )}
                     </Button>
                   </div>
-                  {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
@@ -326,10 +295,11 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
-                      placeholder="Confirm password"
+                      placeholder="Repeat password"
                       value={formData.confirmPassword}
                       onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                      className={`pr-10 ${errors.confirmPassword ? "border-red-500" : ""}`}
+                      required
+                      className="pr-10"
                     />
                     <Button
                       type="button"
@@ -345,7 +315,69 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
                       )}
                     </Button>
                   </div>
-                  {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword}</p>}
+                </div>
+              </div>
+
+              {/* Work Information */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Role
+                  </Label>
+                  <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((roleOption) => (
+                        <SelectItem key={roleOption.value} value={roleOption.value}>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={roleOption.color as any} className="text-xs">
+                              {roleOption.value.toUpperCase()}
+                            </Badge>
+                            {roleOption.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      Department
+                    </Label>
+                    <Select value={formData.department} onValueChange={(value) => handleInputChange("department", value)} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept} value={dept}>
+                            {dept}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Branch Location</Label>
+                    <Select value={formData.branchlocation} onValueChange={(value) => handleInputChange("branchLocation", value)} required>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.map((branch) => (
+                          <SelectItem key={branch} value={branch}>
+                            {branch}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
@@ -353,37 +385,20 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="terms"
-                  checked={agreeToTerms}
-                  onCheckedChange={(checked) => {
-                    setAgreeToTerms(checked as boolean);
-                    if (errors.terms) {
-                      setErrors(prev => ({ ...prev, terms: "" }));
-                    }
-                  }}
+                  checked={acceptTerms}
+                  onCheckedChange={(checked) => setAcceptTerms(checked as boolean)}
                 />
-                <Label
-                  htmlFor="terms"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
+                <Label htmlFor="terms" className="text-sm">
                   I agree to the{" "}
-                  <button
-                    type="button"
-                    className="text-primary hover:underline"
-                    onClick={() => alert("Terms and conditions dialog would open here")}
-                  >
-                    Terms and Conditions
-                  </button>{" "}
+                  <Link to="/terms" className="text-primary hover:underline">
+                    Terms of Service
+                  </Link>{" "}
                   and{" "}
-                  <button
-                    type="button"
-                    className="text-primary hover:underline"
-                    onClick={() => alert("Privacy policy dialog would open here")}
-                  >
+                  <Link to="/privacy" className="text-primary hover:underline">
                     Privacy Policy
-                  </button>
+                  </Link>
                 </Label>
               </div>
-              {errors.terms && <p className="text-sm text-red-500">{errors.terms}</p>}
 
               {/* Submit Button */}
               <Button
@@ -395,17 +410,15 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
               </Button>
 
               {/* Login Link */}
-              <div className="text-center">
+              <div className="text-center mt-4">
                 <p className="text-sm text-muted-foreground">
                   Already have an account?{" "}
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="p-0 h-auto text-primary hover:underline"
-                    onClick={() => navigate("/login")}
+                  <Link 
+                    to="/login" 
+                    className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
                   >
-                    Sign in here
-                  </Button>
+                    Sign In
+                  </Link>
                 </p>
               </div>
             </form>

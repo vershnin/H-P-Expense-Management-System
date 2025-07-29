@@ -1,19 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff, Shield, Mail, Lock } from "lucide-react";
-import { User } from "types";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff, Shield, Mail, Lock, AlertCircle } from "lucide-react";
+import { User } from "../../types";
 import { login } from "../../api/auth";
 
 interface LoginPageProps {
@@ -27,34 +22,33 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [role, setRole] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const roles = [
     { value: "admin", label: "System Administrator", color: "destructive" },
     { value: "finance", label: "Finance Manager", color: "primary" },
     { value: "branch", label: "Branch Officer", color: "success" },
-    { value: "auditor", label: "Auditor", color: "warning" },
+    { value: "auditor", label: "Auditor", color: "warning" }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
+    
     try {
-      const {user, token} = await login(email, password, role);
-
-      onLogin(user);
-      navigate("/dashboard");
+      const userData = await login(email, password, role);
+      if (userData && userData.user) {
+        onLogin(null);
+        navigate("/dashboard");
+      } else {
+        setError("Invalid response from server");
+      }
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Login failed");
+      setError(error instanceof Error ? error.message : "Login failed");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleForgotPassword = () => {
-    // Implement forgot password functionality
-    alert(
-      "Forgot password functionality would be implemented here. Please contact your system administrator."
-    );
   };
 
   return (
@@ -64,12 +58,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <div className="text-center mb-8">
           <div className="mx-auto w-48 h-48 mb-4">
             <img
-              src="/hal_logo_320x132.png"
+              src="/hal_logo_320x132.png" 
               alt="Company Logo"
               className="w-full h-full object-contain"
             />
           </div>
-          {/*<h1 className="text-2xl font-bold text-foreground">Hotpoint Appliances Ltd.</h1>*/}
           <p className="text-xs text-muted-foreground mt-1">
             Secure access to financial tracking across all locations
           </p>
@@ -79,12 +72,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <Card className="shadow-elevated border-0">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Sign In</CardTitle>
-            <p className="text-sm text-muted-foreground text-center">
-              Enter your credentials to access your account
-            </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Error Alert */}
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
               {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="flex items-center gap-2">
@@ -128,7 +126,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      <EyeOff className="h-4 w-4 text-muted-foreground"/>
                     ) : (
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     )}
@@ -142,26 +140,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   <Shield className="h-4 w-4" />
                   Access Role
                 </Label>
-                <Select
-                  value={role}
-                  onValueChange={setRole}
-                  name="role"
-                  required
-                >
+                <Select value={role} onValueChange={setRole} name="role" required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
                     {roles.map((roleOption) => (
-                      <SelectItem
-                        key={roleOption.value}
-                        value={roleOption.value}
-                      >
+                      <SelectItem key={roleOption.value} value={roleOption.value}>
                         <div className="flex items-center gap-2">
-                          <Badge
-                            variant={roleOption.color as any}
-                            className="text-xs"
-                          >
+                          <Badge variant={roleOption.color as any} className="text-xs">
                             {roleOption.value.toUpperCase()}
                           </Badge>
                           {roleOption.label}
@@ -170,16 +157,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              {/* Forgot Password Link */}
-              <div className="text-right">
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={handleForgotPassword}
-                >
-                  Forgot Password?
-                </Button>
               </div>
 
               {/* Submit Button */}
@@ -192,15 +169,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               </Button>
 
               {/* Sign Up Link */}
-              <div className="p-0 h-auto text-primary hover:underline text-center">
-                Don't have an account?{" "}
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={() => navigate("/auth/signup")}
-                >
-                  Create account
-                </Button>
+              <div className="text-center mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Don't have an account?{" "}
+                  <Link 
+                    to="/signup" 
+                    className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
+                  >
+                    Create Account
+                  </Link>
+                </p>
               </div>
             </form>
           </CardContent>

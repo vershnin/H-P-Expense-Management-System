@@ -1,56 +1,84 @@
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { verifyToken } from '@/api/auth';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User } from '../types';
+import { verifyToken, logout as logoutApi } from '../api/auth';
 
-interface User {
-  id: number;
-  email: string;
-  role: string;
-  name: string;
-}
-
-interface AuthState {
+interface AuthContextType {
   user: User | null;
-  token: string | null;
-}
-
-interface AuthContextType extends AuthState {
-  setAuth: (auth: AuthState) => void;
-  logout: () => void;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (user: User) => void;
+  logout: () => Promise<void>;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [auth, setAuth] = useState<AuthState>({ user: null, token: null });
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const isAuthenticated = !!user;
+
+  // Check for existing token on app load
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      verifyToken(token)
-        .then(user => setAuth({ user, token }))
-        .catch(() => {
-          localStorage.removeItem('token');
-          setAuth({ user: null, token: null });
-        });
-    }
+    const initializeAuth = async () => {
+      try {
+        const userData = await verifyToken();
+        if (userData) {
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Token verification failed:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeAuth();
   }, []);
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setAuth({ user: null, token: null });
+  const login = (userData: User) => {
+    setUser(userData);
+  };
+
+  const logout = async () => {
+    try {
+      await logoutApi();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+    }
+  };
+
+  const updateUser = (userData: User) => {
+    setUser(userData);
+  };
+
+  const contextValue: AuthContextType = {
+    user,
+    isAuthenticated,
+    isLoading,
+    login,
+    logout,
+    updateUser,
   };
 
   return (
-    <AuthContext.Provider value={{ ...auth, setAuth, logout }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};
