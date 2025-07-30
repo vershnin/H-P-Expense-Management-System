@@ -6,9 +6,29 @@ import bcrypt
 import logging
 from flask_cors import CORS
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 from functools import wraps
+
+# Add this helper function near the top of your file, after the imports
+def safe_datetime_format(dt_value):
+    """Safely convert datetime value to ISO format string"""
+    if dt_value is None:
+        return None
+    if isinstance(dt_value, str):
+        # If it's already a string, return it directly or try to parse it
+        try:
+            # Try to parse if it's a datetime string and reformat
+            from dateutil import parser
+            parsed_dt = parser.parse(dt_value)
+            return parsed_dt.isoformat()
+        except:
+            # If parsing fails, return the string as-is
+            return dt_value
+    if hasattr(dt_value, 'isoformat'):
+        # If it's a datetime object, convert to ISO format
+        return dt_value.isoformat()
+    return str(dt_value)  # Fallback to string conversion
 
 load_dotenv()
 
@@ -37,6 +57,10 @@ def get_db_connection():
             f'DATABASE={database};'
             f'Trusted_Connection=yes;'
         )
+
+        # configure cursor to return datetime objects
+        conn.autocommit = False
+
         return conn
     except pyodbc.Error as e:
         raise Exception(f"Connection failed: {str(e)}")
@@ -54,8 +78,8 @@ def validate_password(password):
 def create_jwt_token(user_id):
     payload = {
         'user_id': user_id,
-        'exp': datetime.utcnow() + timedelta(hours=24),
-        'iat': datetime.utcnow()
+        'exp': datetime.now(timezone.utc) + timedelta(hours=24),
+        'iat': datetime.now(timezone.utc)
     }
     return jwt.encode(payload, app.config['JWT_SECRET_KEY'], algorithm='HS256')
 
@@ -193,7 +217,7 @@ def signup():
             data['branchLocation'],
             0,  # is_verified = False
             1,  # is_active = True
-            datetime.utcnow()
+            datetime.now(timezone.utc)
         ))
         
         # Get the new user ID
@@ -233,35 +257,44 @@ def signup():
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
+        print("Login endpoint hit") # Debugging line
         data = request.get_json()
+        print(f"Login data received: {data}")  # Debugging line
         
         # Validate required fields
         if not all(data.get(field) for field in ['email', 'password', 'role']):
+            print("Missing credentials")  # Debugging line
             return jsonify({
                 'error': 'Missing credentials',
                 'message': 'Email, password, and role are required'
             }), 400
         
+        print("Attempting to connect to the database")  # Debugging line
         conn = get_db_connection()
         cursor = conn.cursor()
         
         # Find user
+        print(f"Looking for user with email: {data['email'].lower()}")  # Debugging line
         cursor.execute("""
             SELECT id, first_name, last_name, email, phone, password_hash, role, department, branch_location, is_verified, is_active, created_at, last_login
             FROM users WHERE email = ?
         """, (data['email'].lower(),))
         
         user = cursor.fetchone()
-        
+        print(f"User found: {user}")  # Debugging line
+
         if not user:
+            print("User not found")  # Debugging line
             return jsonify({
                 'error': 'Invalid credentials',  
                 'message': 'Invalid email or password'
             }), 401
         
         user_id, first_name, last_name, email, phone, password_hash, role, department, branch_location, is_verified, is_active, created_at, last_login = user
-        
+        print(f"User role: {role}, provided role: {data['role']}")  # Debugging line
+
         # Verify password
+        print("Verifying password")  # Debugging line
         if not bcrypt.checkpw(data['password'].encode('utf-8'), password_hash.encode('utf-8')):
             return jsonify({
                 'error': 'Invalid credentials',
@@ -282,10 +315,11 @@ def login():
                 'message': 'Selected role does not match your account'
             }), 403
         
+        print("Creating JWT token")  # Debugging line
         # Update last login
-        cursor.execute("UPDATE users SET last_login = ? WHERE id = ?", (datetime.utcnow(), user_id))
+        cursor.execute("UPDATE users SET last_login = ? WHERE id = ?", (datetime.now(timezone.utc), user_id))
         conn.commit()
-        
+            
         # Create JWT token
         token = create_jwt_token(user_id)
         
@@ -300,10 +334,11 @@ def login():
             'branchLocation': branch_location,
             'isVerified': bool(is_verified),
             'isActive': bool(is_active),
-            'createdAt': created_at.isoformat() if created_at else None,
-            'lastLogin': datetime.utcnow().isoformat()
+            'createdAt': safe_datetime_format(created_at),
+            'lastLogin': safe_datetime_format(last_login)
         }
         
+        print("Login successful, returning response")  # Debugging line
         return jsonify({
             'message': 'Login successful',
             'user': user_dict,
@@ -358,8 +393,8 @@ def verify_token():
             'branchLocation': branch_location,
             'isVerified': bool(is_verified),
             'isActive': bool(is_active),
-            'createdAt': created_at.isoformat() if created_at else None,
-            'lastLogin': last_login.isoformat() if last_login else None
+            'createdAt': safe_datetime_format(created_at),
+            'lastLogin': safe_datetime_format(last_login) # Ensure last_login is formatted correctly
         }
         
         return jsonify({

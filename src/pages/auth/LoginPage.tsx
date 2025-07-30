@@ -4,7 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Shield, Mail, Lock, AlertCircle } from "lucide-react";
@@ -28,24 +34,36 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     { value: "admin", label: "System Administrator", color: "destructive" },
     { value: "finance", label: "Finance Manager", color: "primary" },
     { value: "branch", label: "Branch Officer", color: "success" },
-    { value: "auditor", label: "Auditor", color: "warning" }
+    { value: "auditor", label: "Auditor", color: "warning" },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
+
     try {
       const userData = await login(email, password, role);
+
       if (userData && userData.user) {
-        onLogin(null);
-        navigate("/dashboard");
+        onLogin(userData.user);
+
+        // Navigate based on role
+        const roleRoutes = {
+          admin: "/AdminDashboard",
+          finance: "/FinanceDashboard",
+          branch: "/BranchDashboard",
+          auditor: "/AuditorDashboard",
+        };
+        
+        const route = roleRoutes[userData.user.role as keyof typeof roleRoutes] || "/Dashboard";
+        navigate(route);
       } else {
         setError("Invalid response from server");
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Login failed");
+      console.error("Login error:", error);
+      setError(error instanceof Error ? error.message : "An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +76,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <div className="text-center mb-8">
           <div className="mx-auto w-48 h-48 mb-4">
             <img
-              src="/hal_logo_320x132.png" 
+              src="/hal_logo_320x132.png"
               alt="Company Logo"
               className="w-full h-full object-contain"
             />
@@ -126,7 +144,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground"/>
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
                     ) : (
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     )}
@@ -140,15 +158,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   <Shield className="h-4 w-4" />
                   Access Role
                 </Label>
-                <Select value={role} onValueChange={setRole} name="role" required>
+                <Select
+                  value={role}
+                  onValueChange={setRole}
+                  name="role"
+                  required
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
                     {roles.map((roleOption) => (
-                      <SelectItem key={roleOption.value} value={roleOption.value}>
+                      <SelectItem
+                        key={roleOption.value}
+                        value={roleOption.value}
+                      >
                         <div className="flex items-center gap-2">
-                          <Badge variant={roleOption.color as any} className="text-xs">
+                          <Badge
+                            variant={roleOption.color as any}
+                            className="text-xs"
+                          >
                             {roleOption.value.toUpperCase()}
                           </Badge>
                           {roleOption.label}
@@ -172,8 +201,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               <div className="text-center mt-4">
                 <p className="text-sm text-muted-foreground">
                   Don't have an account?{" "}
-                  <Link 
-                    to="/signup" 
+                  <Link
+                    to="/signup"
                     className="text-primary hover:text-primary/80 font-medium underline-offset-4 hover:underline"
                   >
                     Create Account

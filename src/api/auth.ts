@@ -3,7 +3,7 @@ const API_BASE_URL = 'http://localhost:5000/api';
 export interface LoginRequest {
   email: string;
   password: string;
-  role: string;
+  role: string; // "admin", "finance", "branch", or "auditor"
 }
 
 export interface SignUpRequest {
@@ -12,9 +12,9 @@ export interface SignUpRequest {
   email: string;
   phone: string;
   password: string;
-  role: string;
+  role: string; // "admin", "finance", "branch", or "auditor"
   department: string;
-  branchlocation: string;
+  branchLocation: string;
 }
 
 export interface User {
@@ -25,7 +25,7 @@ export interface User {
   lastName: string;
   email: string;
   phone: string;
-  role: string;
+  role: "admin" | "finance" | "branch" | "auditor";
   department: string;
   branchLocation: string;
   isVerified: boolean;
@@ -47,35 +47,38 @@ export interface ApiError {
 }
 
 // Utility function to handle API responses
-export const login = async (email: string, password: string, role: string): Promise<AuthResponse> => {
+export async function login(email: string, password: string, role: string): Promise<AuthResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password, role }),
+      body: JSON.stringify({
+        email,
+        password,
+        role
+      }),
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.message || 'Login failed');
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Login failed');
     }
 
-    // Store tokens in localStorage
+    const data = await response.json();
+    
+    // Store token if needed
     if (data.token) {
-      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('auth_token', data.token);
     }
-
-    return data;
+    
+    return data; // This should contain { user: {...}, token: "...", message: "..." }
   } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Network error occurred');
+    console.error('Login API error:', error);
+    throw error;
   }
-};
+}
 
 // Sign up function
 export const signup = async (signupData: SignUpRequest): Promise<{ message: string }> => {

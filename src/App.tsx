@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/signup';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/AdminDashboard';
 import './App.css';
 import { User } from 'lucide-react';
 import { logout } from './api/auth';

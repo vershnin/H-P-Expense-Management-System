@@ -265,7 +265,7 @@ const BranchOfficerDashboard: React.FC<DashboardProps> = ({ user, onLogout }) =>
             <div className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg">
               <UserIcon className="h-4 w-4 text-secondary-foreground" />
               <span className="text-sm font-medium text-secondary-foreground">
-                {user.name}
+                {user.firstName} {user.lastName}
               </span>
               <Badge variant="outline" className="text-xs">
                 BRANCH OFFICER

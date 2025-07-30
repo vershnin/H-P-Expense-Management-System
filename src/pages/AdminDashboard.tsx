@@ -106,10 +106,6 @@ interface Policy {
   location?: string;
 }
 
-interface DashboardProps {
-  user: User;
-  onLogout: () => void;
-}
 const Dashboard: React.FC = ()  => {
   const { user, logout } = useAuth();
 

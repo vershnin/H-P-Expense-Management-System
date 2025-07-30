@@ -27,7 +27,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
     confirmPassword: "",
     role: "",
     department: "",
-    branchlocation: ""
+    branchLocation: ""
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -124,7 +124,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
         password: formData.password,
         role: formData.role,
         department: formData.department,
-        branchlocation: formData.branchlocation
+        branchLocation: formData.branchLocation
       });
       
       setSuccess("Account created successfully! Please check your email for verification.");
@@ -235,7 +235,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="john.doe@hotpoint.co.ke"
+                    placeholder="username@hotpoint.co.ke"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     required
@@ -365,7 +365,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
                   </div>
                   <div className="space-y-2">
                     <Label>Branch Location</Label>
-                    <Select value={formData.branchlocation} onValueChange={(value) => handleInputChange("branchLocation", value)} required>
+                    <Select value={formData.branchLocation} onValueChange={(value) => handleInputChange("branchLocation", value)} required>
                       <SelectTrigger>
                         <SelectValue placeholder="Select branch" />
                       </SelectTrigger>

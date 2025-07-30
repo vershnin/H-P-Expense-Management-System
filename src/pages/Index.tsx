@@ -1,6 +1,6 @@
 import { useState } from "react";
 import LoginPage from "@/pages/auth/LoginPage";
-import Dashboard from "@/pages/Dashboard";
+import Dashboard from "@/pages/AdminDashboard";
 import { User } from "@/types";
 
 const Index = () => {
