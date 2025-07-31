@@ -46,44 +46,52 @@ const AppRoutes: React.FC = () => {
       
       {/* Admin only routes */}
       <Route
-        path="/admin/*"
+        path="/AdminDashboard"
         element={
           <ProtectedRoute requiredRole={['admin']}>
-            <AdminRoutes />
+            <Dashboard />
           </ProtectedRoute>
         }
       />
       
       {/* Finance routes */}
       <Route
-        path="/finance/*"
+        path="/FinanceDashboard"
         element={
           <ProtectedRoute requiredRole={['admin', 'finance']}>
-            <FinanceRoutes />
+            <Dashboard />
           </ProtectedRoute>
         }
       />
       
       {/* Branch routes */}
       <Route
-        path="/branch/*"
+        path="/BranchDashboard"
         element={
           <ProtectedRoute requiredRole={['admin', 'finance', 'branch']}>
-            <BranchRoutes />
+            <Dashboard />
           </ProtectedRoute>
         }
       />
       
       {/* Auditor routes */}
       <Route
-        path="/audit/*"
+        path="/AuditDashboard"
         element={
           <ProtectedRoute requiredRole={['admin', 'auditor']}>
-            <AuditRoutes />
+            <Dashboard />
           </ProtectedRoute>
         }
       />
       
+      {/* Existing admin/finance/branch/audit routes */}
+      <Route path="/admin/*" element={<ProtectedRoute requiredRole={['admin']}><AdminRoutes/></ProtectedRoute>} />
+      <Route path="/finance/*" element={<ProtectedRoute requiredRole={['admin','finance']}><FinanceRoutes/></ProtectedRoute>} />
+      <Route path="/branch/*" element={<ProtectedRoute requiredRole={['admin', 'finance', 'branch']}><BranchRoutes/></ProtectedRoute>} />
+      <Route path="/audit/*" element={<ProtectedRoute requiredRole={['admin', 'auditor']}><AuditRoutes/></ProtectedRoute>} />
+      
+      {/* Redirect to login if not authenticated */}
+
       {/* Default redirect */}
       <Route path="/" element={<AuthenticatedRedirect />} />
       

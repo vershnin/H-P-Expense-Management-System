@@ -15,29 +15,13 @@ import {
 } from "@/components/ui/select";
 import {
   DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Building,
-  Plus,
   Search,
   Filter,
-  PieChart,
-  BarChart3,
-  Users,
   LogOut,
-  X,
   FileImage,
-  Upload,
-  CheckCircle,
-  Clock,
   AlertCircle,
-  Globe,
   Receipt,
   FileText,
-  Settings,
-  CreditCard,
-  Wallet,
-  Edit,
   UserIcon,
 } from "lucide-react";
 import {
@@ -49,8 +33,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
   Table,
@@ -273,7 +256,7 @@ const AuditorDashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <div className="flex items-center gap-2 px-3 py-2 bg-secondary rounded-lg">
               <UserIcon className="h-4 w-4 text-secondary-foreground" />
               <span className="text-sm font-medium text-secondary-foreground">
-                {user.name}
+                {user.firstName} {user.lastName}
               </span>
               <Badge variant="outline" className="text-xs">
                 AUDITOR
