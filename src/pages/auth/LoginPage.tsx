@@ -50,10 +50,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
         // Navigate based on role
         const roleRoutes = {
-          admin: "/dashboard",
-          finance: "/dashboard",
-          branch: "/dashboard",
-          auditor: "/dashboard",
+          admin: "/AdminDashboard",
+          finance: "/FinanceDashboard",
+          branch: "/BranchDashboard",
+          auditor: "/AuditDashboard",
         };
         
         const route = roleRoutes[userData.user.role as keyof typeof roleRoutes] || "/Dashboard";

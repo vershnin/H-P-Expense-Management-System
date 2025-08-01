@@ -257,44 +257,35 @@ def signup():
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
-        print("Login endpoint hit") # Debugging line
         data = request.get_json()
-        print(f"Login data received: {data}")  # Debugging line
         
         # Validate required fields
         if not all(data.get(field) for field in ['email', 'password', 'role']):
-            print("Missing credentials")  # Debugging line
             return jsonify({
                 'error': 'Missing credentials',
                 'message': 'Email, password, and role are required'
             }), 400
         
-        print("Attempting to connect to the database")  # Debugging line
         conn = get_db_connection()
         cursor = conn.cursor()
         
         # Find user
-        print(f"Looking for user with email: {data['email'].lower()}")  # Debugging line
         cursor.execute("""
             SELECT id, first_name, last_name, email, phone, password_hash, role, department, branch_location, is_verified, is_active, created_at, last_login
             FROM users WHERE email = ?
         """, (data['email'].lower(),))
         
         user = cursor.fetchone()
-        print(f"User found: {user}")  # Debugging line
 
         if not user:
-            print("User not found")  # Debugging line
             return jsonify({
                 'error': 'Invalid credentials',  
                 'message': 'Invalid email or password'
             }), 401
         
         user_id, first_name, last_name, email, phone, password_hash, role, department, branch_location, is_verified, is_active, created_at, last_login = user
-        print(f"User role: {role}, provided role: {data['role']}")  # Debugging line
-
+        
         # Verify password
-        print("Verifying password")  # Debugging line
         if not bcrypt.checkpw(data['password'].encode('utf-8'), password_hash.encode('utf-8')):
             return jsonify({
                 'error': 'Invalid credentials',
@@ -315,7 +306,6 @@ def login():
                 'message': 'Selected role does not match your account'
             }), 403
         
-        print("Creating JWT token")  # Debugging line
         # Update last login
         cursor.execute("UPDATE users SET last_login = ? WHERE id = ?", (datetime.now(timezone.utc), user_id))
         conn.commit()
@@ -338,7 +328,6 @@ def login():
             'lastLogin': safe_datetime_format(last_login)
         }
         
-        print("Login successful, returning response")  # Debugging line
         return jsonify({
             'message': 'Login successful',
             'user': user_dict,

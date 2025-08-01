@@ -16,7 +16,6 @@ import {
 import {
   Building,
   Plus,
-  
   Search,
   Filter,
   PieChart,
@@ -33,6 +32,7 @@ import {
   Wallet,
   Edit,
   UserIcon,
+  Eye,
 } from "lucide-react";
 import {
   Dialog,
@@ -55,6 +55,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { set } from "date-fns";
 
 interface FloatData {
   id: string;
@@ -94,12 +95,13 @@ interface Policy {
   location?: string;
 }
 
-const Dashboard: React.FC = ()  => {
+const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
   // Type guard to ensure user exists
   if (!user) {
-    navigate('/login');
+    navigate("/login");
     return <div>Loading or redirect to login...</div>;
   }
 
@@ -109,7 +111,7 @@ const Dashboard: React.FC = ()  => {
   const isFinance = user.role === "finance";
   const isAuditor = user.role === "auditor";
   const userName = `${user.firstName} ${user.lastName}`;
-  
+
   // State management
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
@@ -118,7 +120,9 @@ const Dashboard: React.FC = ()  => {
   const [showNewExpenseDialog, setShowNewExpenseDialog] = useState(false);
   const [showReceiptUpload, setShowReceiptUpload] = useState(false);
   const [showPolicyDetails, setShowPolicyDetails] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<ExpenseData | null>(null);
+  const [selectedExpense, setSelectedExpense] = useState<ExpenseData | null>(
+    null
+  );
   const [selectedFloat, setSelectedFloat] = useState<FloatData | null>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
@@ -276,13 +280,48 @@ const Dashboard: React.FC = ()  => {
     "SERVICE HEAD OFFICE RUIRU - SCS",
   ];
 
-  // Filter data based on search term and location
-  const [floats, setFloats] = useState<FloatData[]>(mockFloats);(
-    isAdmin
-      
-  )
-  const [expenses, setExpenses] = useState<ExpenseData[]>(mockRecentExpenses);
+  // Filter data based on user role
+  const userLocations = isBranchManager ? [user.branchLocation] : locations;
+
+  const filteredFloats = isBranchManager
+    ? mockFloats.filter((float) => float.location === user.branchLocation)
+    : mockFloats;
+
+  const filteredExpenses = isBranchManager
+    ? mockRecentExpenses.filter(
+        (expense) => expense.location === user.branchLocation
+      )
+    : mockRecentExpenses;
+
+  const [floats, setFloats] = useState<FloatData[]>(filteredFloats);
+  const [expenses, setExpenses] = useState<ExpenseData[]>(filteredExpenses);
   const pendingApprovals = expenses.filter((e) => e.status === "pending");
+
+  // Available tabs based on user role
+  const getAvailableTabs = () => {
+    const baseTabs = [
+      { id: "overview", label: "Overview" },
+      { id: "expenses", label: "Expense Tracking" },
+    ];
+
+    if (isAdmin || isFinance) {
+      baseTabs.push({ id: "floats", label: "Float Management" });
+    }
+
+    if (isAdmin || isBranchManager || isFinance) {
+      baseTabs.push({ id: "approvals", label: "Approvals" });
+    }
+
+    if (isAdmin || isFinance || isAuditor) {
+      baseTabs.push({ id: "reports", label: "Reports" });
+    }
+
+    if (isAuditor) {
+      baseTabs.push({ id: "audit", label: "Audit Trail" });
+    }
+
+    return baseTabs;
+  };
 
   // Calculate totals
   const totalFloats = floats.length;
@@ -390,7 +429,8 @@ const Dashboard: React.FC = ()  => {
     const expense: ExpenseData = {
       id: newId,
       ...newExpense,
-      status: user?.role === "admin" ? "approved" : "pending",
+      // Auto-approve if admin, otherwise pending
+      status: isAdmin ? "approved" : "pending",
       policyViolation: violation,
       violationReason,
       receipt: receiptFile?.name,
@@ -407,7 +447,11 @@ const Dashboard: React.FC = ()  => {
     setExpenses(
       expenses.map((e) =>
         e.id === expenseId
-          ? { ...e, status: "approved", approver: `${user.firstName} ${user.lastName}` }
+          ? {
+              ...e,
+              status: "approved",
+              approver: `${user.firstName} ${user.lastName}`,
+            }
           : e
       )
     );
@@ -465,7 +509,7 @@ const Dashboard: React.FC = ()  => {
 
   // Redirect to login if user is not authenticated
   if (!user) {
-    navigate('/login');
+    navigate("/login");
     return null;
   }
 
@@ -486,6 +530,8 @@ const Dashboard: React.FC = ()  => {
               <p className="text-sm text-muted-foreground">
                 {user.role === "admin"
                   ? "Administrator Dashboard"
+                  : user.role === "finance"
+                  ? "Finance Dashboard"
                   : user.role === "branch"
                   ? "Branch Manager Dashboard"
                   : "Auditor Dashboard"}
@@ -507,19 +553,37 @@ const Dashboard: React.FC = ()  => {
               Settings
             </Button>
 
-            { user.role === "admin" && (
-            <Button size="sm" onClick={() => setShowNewFloatDialog(true)} className="flex-1 md:flex-none">
-              <Plus className="h-4 w-4 mr-2" />
-              New Float
-            </Button>
+            {/* Conditionally show New Float button */}
+            {(isAdmin || isFinance) && (
+              <Button
+                size="sm"
+                onClick={() => setShowNewFloatDialog(true)}
+                className="flex-1 md:flex-none"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Float
+              </Button>
             )}
 
-            <Button size="sm" onClick={() => setShowNewExpenseDialog(true)} className="flex-1 md:flex-none">
-              <Plus className="h-4 w-4 mr-2" />
-              New Expense
-            </Button>
+            {/* Conditionally show New Expense button */}
+            {!isAuditor && (
+              <Button
+                size="sm"
+                onClick={() => setShowNewExpenseDialog(true)}
+                className="flex-1 md:flex-none"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Expense
+              </Button>
+            )}
 
-            <Button variant="outline" size="sm" onClick={logout} className="flex-1 md:flex-none">
+            {/* Logout button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={logout}
+              className="flex-1 md:flex-none"
+            >
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
@@ -529,23 +593,28 @@ const Dashboard: React.FC = ()  => {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 p-3">
-        <Card className="bg-gradient-to-r from-primary to-primary-light text-primary-foreground p-3">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Float Value
-            </CardTitle>
-            <Wallet className="h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalValue)}
-            </div>
-            <p className="text-xs opacity-80">
-              {totalFloats} floats • {formatCurrency(totalBalance)} available
-            </p>
-          </CardContent>
-        </Card>
-
+        
+        {/* Show for all except auditors */}
+        {!isAuditor && (
+          <Card className="bg-gradient-to-r from-primary to-primary-light text-primary-foreground p-3">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Float Value
+              </CardTitle>
+              <Wallet className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatCurrency(totalValue)}
+              </div>
+              <p className="text-xs opacity-80">
+                {totalFloats} floats • {formatCurrency(totalBalance)} available
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      
+        {(isAdmin || isBranchManager || isFinance) && (
         <Card className="bg-gradient-to-r from-secondary to-secondary-light text-secondary-foreground p-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -562,6 +631,7 @@ const Dashboard: React.FC = ()  => {
             </p>
           </CardContent>
         </Card>
+        )}
 
         <Card className="p-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -586,9 +656,11 @@ const Dashboard: React.FC = ()  => {
             <Building className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">25</div>
+            <div className="text-2xl font-bold">
+              {isBranchManager ? 1 : locations.length - 1}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Across all business units
+              {isBranchManager ? "Your branch" : "Across all business units"}
             </p>
           </CardContent>
         </Card>
@@ -596,8 +668,8 @@ const Dashboard: React.FC = ()  => {
 
       {/* Navigation Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="grid w-full grid-cols-5">
-          {tabs.map((tab) => (
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
+          {getAvailableTabs().map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id}>
               {tab.label}
             </TabsTrigger>
@@ -688,6 +760,7 @@ const Dashboard: React.FC = ()  => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
+                {!isAuditor && (
                 <Button
                   variant="outline"
                   className="h-20 flex-col"
@@ -696,6 +769,18 @@ const Dashboard: React.FC = ()  => {
                   <Plus className="h-6 w-6 mb-2" />
                   <span className="text-sm">New Expense</span>
                 </Button>
+                )}
+                {(isAdmin || isFinance) && (
+                  <Button
+                    variant="outline"
+                    className="h-20 flex-col"
+                    onClick={() => setShowNewFloatDialog(true)}
+                  >
+                    <Plus className="h-6 w-6 mb-2" />
+                    <span className="text-sm">New Float</span>
+                  </Button>
+                )}
+
                 <Button
                   variant="outline"
                   className="h-20 flex-col"
@@ -704,6 +789,8 @@ const Dashboard: React.FC = ()  => {
                   <Receipt className="h-6 w-6 mb-2" />
                   <span className="text-sm">View Expenses</span>
                 </Button>
+
+                {(isAdmin || isFinance || isAuditor) && (
                 <Button
                   variant="outline"
                   className="h-20 flex-col"
@@ -712,19 +799,33 @@ const Dashboard: React.FC = ()  => {
                   <PieChart className="h-6 w-6 mb-2" />
                   <span className="text-sm">Generate Report</span>
                 </Button>
+                )}
+
+                {(isAdmin || isBranchManager || isFinance) && (
+                  <Button
+                    variant="outline"
+                    className="h-20 flex-col"
+                    onClick={() => setActiveTab("floats")}
+                  >
+                    <Wallet className="h-6 w-6 mb-2" />
+                    <span className="text-sm">Manage Floats</span>
+                  </Button>
+                )}
+
+                {/* Approval or Profile */}
                 <Button
                   variant="outline"
                   className="h-20 flex-col"
-                  onClick={() =>
-                    setActiveTab(
-                      user.role === "admin" || user.role === "branch"
-                        ? "approvals"
-                        : "profile"
-                    )
-                  }
+                  onClick={() =>{
+                    if (isAdmin || isFinance || isBranchManager) {
+                    setActiveTab("approvals");
+                    } else {
+                      setActiveTab("profile");
+                    }
+                  }}
                 >
                   <span className="text-sm">
-                    {user.role === "admin" || user.role === "branch"
+                    {isAdmin || isFinance || isBranchManager
                       ? "Manage Approvals"
                       : "My Profile"}
                   </span>
@@ -735,6 +836,7 @@ const Dashboard: React.FC = ()  => {
         </div>
       )}
 
+      {/* Expense Tracking Tab */}
       {activeTab === "expenses" && (
         <Card>
           <CardHeader className="flex flex-row justify-between items-center">
@@ -742,10 +844,13 @@ const Dashboard: React.FC = ()  => {
               <Receipt className="h-5 w-5" />
               Expense History
             </CardTitle>
+
+            {!isAuditor && (
             <Button size="sm" onClick={() => setShowNewExpenseDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Expense
             </Button>
+            )}
           </CardHeader>
           <CardContent>
             <Table>
@@ -755,7 +860,7 @@ const Dashboard: React.FC = ()  => {
                   <TableHead>Description</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Amount</TableHead>
-                  <TableHead>Float</TableHead>
+                  {!isBranchManager &&<TableHead>Float</TableHead>}
                   <TableHead>Location</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Receipt</TableHead>
@@ -820,7 +925,8 @@ const Dashboard: React.FC = ()  => {
         </Card>
       )}
 
-      {activeTab === "floats" && (
+      {/* For admin and finance*/}
+      {(isAdmin || isFinance) && activeTab === "floats" && (
         <Card>
           <CardHeader className="flex flex-row justify-between items-center">
             <CardTitle className="flex items-center gap-2">
@@ -897,8 +1003,8 @@ const Dashboard: React.FC = ()  => {
         </Card>
       )}
 
-      {activeTab === "approvals" &&
-        (user.role === "branch" || user.role === "admin") && (
+      {/* For admins, finance and branch*/}
+      {(isAdmin || isFinance || isBranchManager) && activeTab === "approvals" && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -965,7 +1071,8 @@ const Dashboard: React.FC = ()  => {
           </Card>
         )}
 
-      {activeTab === "reports" && (
+      {/* Report Tab for admin, finance and auditor */}
+      {(isAdmin || isFinance || isAuditor) && activeTab === "reports" && (
         <div className="grid gap-6">
           <Card>
             <CardHeader>
@@ -1041,6 +1148,26 @@ const Dashboard: React.FC = ()  => {
         </div>
       )}
 
+      {/* Audit Trail Tab for auditors */}
+      {isAuditor && activeTab === "audit" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Audit Trail</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              This section will contain detailed logs of all actions taken in the
+              system, including expense approvals, float management, and user
+              activities.
+            </p>
+            {/* Placeholder for audit logs */}
+            <div className="mt-4">
+              <p className="text-sm">Audit logs will be displayed here.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       {/* New Float Dialog */}
       <Dialog open={showNewFloatDialog} onOpenChange={setShowNewFloatDialog}>
         <DialogContent className="sm:max-w-[600px]">
@@ -1631,7 +1758,10 @@ const Dashboard: React.FC = ()  => {
                     <Button
                       variant="outline"
                       onClick={() =>
-                        rejectExpense(selectedExpense.id, "Rejected by branch manager")
+                        rejectExpense(
+                          selectedExpense.id,
+                          "Rejected by branch manager"
+                        )
                       }
                     >
                       Reject
