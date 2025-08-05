@@ -7,6 +7,7 @@ export interface User {
   role: 'admin' | 'finance' | 'branch' | 'auditor';
   department: string;
   branchLocation: string;
+  location?: string; // optional location property
   isVerified: boolean;
   isActive: boolean;
   createdAt: string;
