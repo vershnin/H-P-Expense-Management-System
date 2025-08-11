@@ -1,0 +1,15 @@
+0000000000000000000000000000000000000000 a8f947361f10221e3fa7c315bd5917747d794af4 richardorinda <richardorinda@gmail.com> 1753106724 +0300	commit (initial): initial commit
+a8f947361f10221e3fa7c315bd5917747d794af4 2f4deae2bc8aad2a5ae6b80ab2ae8b14a9639986 richardorinda <richardorinda@gmail.com> 1753192855 +0300	commit: update on files
+2f4deae2bc8aad2a5ae6b80ab2ae8b14a9639986 53c8c85f6eaa4942857b5b87fde8cd71a470b8b4 richardorinda <richardorinda@gmail.com> 1753339290 +0300	pull: Fast-forward
+53c8c85f6eaa4942857b5b87fde8cd71a470b8b4 150bf3f924c55e0649e401a059dc360565792068 richardorinda <richardorinda@gmail.com> 1753339783 +0300	commit: refactor: remove unused database and server configuration files; update type imports and include types directory
+150bf3f924c55e0649e401a059dc360565792068 df8dd06c7c85ef7638d0ef0a7a8053a03d41ebe2 richardorinda <richardorinda@gmail.com> 1753342650 +0300	commit: feat: implement initial Flask application with database connection and API endpoints
+df8dd06c7c85ef7638d0ef0a7a8053a03d41ebe2 0bf186268c6a4cfb309be6283aee457e89d30286 richardorinda <richardorinda@gmail.com> 1753348414 +0300	pull --tags origin master: Fast-forward
+0bf186268c6a4cfb309be6283aee457e89d30286 2218556cdf54007b390840ce8224acd394ee431d richardorinda <richardorinda@gmail.com> 1753356157 +0300	commit: chore: clean up unused code and files; improve project structure
+2218556cdf54007b390840ce8224acd394ee431d 3e24d8ac2f4cf06f3cfc990afda3da19f114faeb richardorinda <richardorinda@gmail.com> 1753364155 +0300	commit: feat: add FinanceDashboard component for managing expenses and floats
+3e24d8ac2f4cf06f3cfc990afda3da19f114faeb 2dfb5189cc6eda82887a89f072d351478d2316a2 richardorinda <richardorinda@gmail.com> 1753453020 +0300	commit: Update
+2dfb5189cc6eda82887a89f072d351478d2316a2 65b499953064d4c0769bbebcfaffdc040ba91e8f richardorinda <richardorinda@gmail.com> 1753797566 +0300	commit: Refactor user type imports and update user role handling across dashboards
+65b499953064d4c0769bbebcfaffdc040ba91e8f 1322bce42f4372f70556c586c9ada6f652d3c592 richardorinda <richardorinda@gmail.com> 1753884420 +0300	commit: Refactor code structure for improved readability and maintainability
+1322bce42f4372f70556c586c9ada6f652d3c592 5d1d9ef2fe87fa3756d04c5487947f04db7936ab richardorinda <richardorinda@gmail.com> 1753967456 +0300	commit: refactor: update routing paths and clean up unused imports in dashboard components
+5d1d9ef2fe87fa3756d04c5487947f04db7936ab 845ba16c03468d0cc53229d6b4f340407bb67029 richardorinda <richardorinda@gmail.com> 1754049789 +0300	commit: feat: update role-based navigation and add Branch Officer Dashboard
+845ba16c03468d0cc53229d6b4f340407bb67029 6f323c6e1c6539f8af8cb45948f3d551955c8f05 richardorinda <richardorinda@gmail.com> 1754402875 +0300	commit: updates on structure and files
+6f323c6e1c6539f8af8cb45948f3d551955c8f05 639b1228f547b0a16dc9a1da7fd8d495f98b74cc richardorinda <richardorinda@gmail.com> 1754905344 +0300	commit: Updates
