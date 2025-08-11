@@ -43,10 +43,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setError("");
 
     try {
-      const userData = await login(email, password, role);
-
-      if (userData && userData.user) {
-        onLogin(userData.user);
+      const response = await login(email, password, role);
+      
+      if (response && response.user) {
+        onLogin(response.user);
 
         // Navigate based on role
         const roleRoutes = {
@@ -56,14 +56,29 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           auditor: "/AuditDashboard",
         };
         
-        const route = roleRoutes[userData.user.role as keyof typeof roleRoutes] || "/Dashboard";
+        const route = roleRoutes[response.user.role as keyof typeof roleRoutes] || "/Dashboard";
         navigate(route);
       } else {
-        setError("Invalid response from server");
+        setError("Invalid response format from server");
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError(error instanceof Error ? error.message : "An unexpected error occurred");
+      
+      // Enhanced error handling with user-friendly messages
+      let errorMessage = "Login failed";
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          errorMessage = "Connection timeout. Please check your internet connection.";
+        } else if (error.message.includes('Network')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (error.message.includes('JSON')) {
+          errorMessage = "Server response error. Please contact support.";
+        } else {
+          errorMessage = error.message || "An unexpected error occurred";
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +131,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="pl-4"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -135,6 +151,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className="pr-10"
+                    disabled={isLoading}
                   />
                   <Button
                     type="button"
@@ -142,6 +159,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     size="sm"
                     className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -163,6 +181,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   onValueChange={setRole}
                   name="role"
                   required
+                  disabled={isLoading}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your role" />
@@ -194,7 +213,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 className="w-full bg-gradient-to-r from-primary to-primary-light hover:from-primary-dark hover:to-primary"
                 disabled={isLoading || !email || !password || !role}
               >
-                {isLoading ? "Signing In..." : "Sign In"}
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Signing In...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
 
               {/* Sign Up Link */}

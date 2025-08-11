@@ -1,52 +1,57 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
+// Enhanced error handling interface
+interface ApiError {
+  message: string;
+  error: string;
+  status: number;
+  details?: any;
+}
+
+// Response wrapper for consistent error handling
+class ApiResponseHandler {
+  static async handleResponse<T>(response: Response): Promise<T> {
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        message: `HTTP ${response.status}: ${response.statusText}`,
+        error: 'Network Error',
+        status: response.status
+      }));
+      
+      throw new Error(errorData.message || 'Request failed');
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('Invalid response format: Expected JSON');
+    }
+
+    try {
+      return await response.json();
+    } catch (error) {
+      throw new Error('Failed to parse JSON response');
+    }
+  }
+
+  static createTimeoutSignal(timeoutMs: number): AbortSignal {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), timeoutMs);
+    return controller.signal;
+  }
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
-  role: string; // "admin", "finance", "branch", or "auditor"
-}
-
-export interface SignUpRequest {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  password: string;
-  role: string; // "admin", "finance", "branch", or "auditor"
-  department: string;
-  branchLocation: string;
-}
-
-export interface User {
-  name: string;
-  permissions: any[];
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  role: "admin" | "finance" | "branch" | "auditor";
-  department: string;
-  branchLocation: string;
-  isVerified: boolean;
-  isActive: boolean;
-  createdAt: string;
-  lastLogin?: string;
+  role: string;
 }
 
 export interface AuthResponse {
-  user: User;
+  user: any;
   token: string;
   message: string;
 }
 
-export interface ApiError {
-  message: string;
-  error: string;
-  status: number;
-}
-
-// Utility function to handle API responses
 export async function login(email: string, password: string, role: string): Promise<AuthResponse> {
   try {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -54,178 +59,138 @@ export async function login(email: string, password: string, role: string): Prom
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        email,
-        password,
-        role
-      }),
+      body: JSON.stringify({ email, password, role }),
+      signal: ApiResponseHandler.createTimeoutSignal(30000), // 30 second timeout
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Login failed');
+    const responseData = await ApiResponseHandler.handleResponse<any>(response);
+    
+    // Handle both old and new response formats
+    let token, user;
+    
+    if (responseData.data && responseData.data.token) {
+      // New format from auth_routes_fixed.py
+      token = responseData.data.token;
+      user = responseData.data.user;
+    } else if (responseData.token) {
+      // Old format or direct response
+      token = responseData.token;
+      user = responseData.user;
+    } else {
+      throw new Error('Invalid response: Missing authentication token');
     }
 
-    const data = await response.json();
+    // Store token securely
+    localStorage.setItem('auth_token', token);
     
-    // Store token if needed
-    if (data.token) {
-      localStorage.setItem('auth_token', data.token);
-    }
+    // Return consistent format
+    return {
+      user: user,
+      token: token,
+      message: responseData.message || 'Login successful'
+    };
     
-    return data; // This should contain { user: {...}, token: "...", message: "..." }
   } catch (error) {
-    console.error('Login API error:', error);
-    throw error;
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout: Please check your connection');
+      }
+      throw error;
+    }
+    throw new Error('Login failed: Unable to connect to server');
   }
 }
 
-// Sign up function
-export const signup = async (signupData: SignUpRequest): Promise<{ message: string }> => {
+// Enhanced signup with better error handling
+export const signup = async (signupData: any): Promise<{ message: string }> => {
   try {
+    console.log('Starting signup request with data:', { ...signupData, password: '[REDACTED]' });
+    
     const response = await fetch(`${API_BASE_URL}/auth/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(signupData),
+      signal: ApiResponseHandler.createTimeoutSignal(30000),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Sign up failed');
-    }
-
-    return { message: data.message };
+    console.log('Signup response status:', response.status);
+    console.log('Signup response headers:', response.headers);
+    
+    const data = await ApiResponseHandler.handleResponse<{ message: string }>(response);
+    console.log('Signup response data:', data);
+    return data;
+    
   } catch (error) {
+    console.error('Signup error details:', error);
     if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout: Please check your connection');
+      }
       throw error;
     }
-    throw new Error('Network error occurred');
+    throw new Error('Signup failed: Unable to connect to server');
   }
 };
 
-// Logout function
+// Enhanced logout with cleanup
 export const logout = async (): Promise<void> => {
   try {
-    const token = localStorage.getItem('authToken');
-
+    const token = localStorage.getItem('auth_token');
+    
     if (token) {
       await fetch(`${API_BASE_URL}/auth/logout`, {
         method: 'POST',
         headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-    });
+        signal: ApiResponseHandler.createTimeoutSignal(10000),
+      }).catch(() => {
+        // Ignore logout errors for cleanup
+      });
     }
 
-    // Clear localStorage
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('auth_token');
   } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Logout failed');
+    // Always clear token on logout attempt
+    localStorage.removeItem('auth_token');
   }
 };
 
-// Verify token function
-export const verifyToken = async (): Promise<User | null> => {
+// Enhanced token verification
+export const verifyToken = async (): Promise<any | null> => {
   try {
-    const token = localStorage.getItem("authToken");
-
+    const token = localStorage.getItem('auth_token');
+    
     if (!token) {
       return null;
     }
+
     const response = await fetch(`${API_BASE_URL}/auth/verify`, {
       method: 'GET',
       headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
+        'Authorization': `Bearer ${token}`,
       },
+      signal: ApiResponseHandler.createTimeoutSignal(10000),
     });
 
-    if (!response.ok) {
-      localStorage.removeItem('authToken');
-      return null;
+    const responseData = await ApiResponseHandler.handleResponse<any>(response);
+    
+    // Handle both old and new response formats
+    if (responseData.data && responseData.data.user) {
+      // New format from auth_routes_fixed.py
+      return responseData.data.user;
+    } else if (responseData.user) {
+      // Old format or direct response
+      return responseData.user;
+    } else {
+      throw new Error('Invalid response format');
     }
-
-    const data = await response.json();
-    return data.user;
+    
   } catch (error) {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('auth_token');
     return null;
   }
 };
-
-// Password reset function
-export const requestPasswordReset = async (email: string): Promise<{ message: string }> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/password-reset-request`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Password reset request failed');
-    }
-
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Network error occurred');
-  }
-};
-
-// Reset password function
-export const resetPassword = async (token: string, newPassword: string): Promise<{ message: string }> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token, newPassword }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Password reset failed');
-    }
-
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error('Network error occurred');
-  }
-}
-
- // Validate Hotpoint email format (username@hotpoint.co.ke)
- 
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@hotpoint\.co\.ke$/;
-  return emailRegex.test(email);
-};
-// Validate Kenyan phone number
-const isValidKenyanPhone = (phone: string): boolean => {
-  const phoneRegex = /^(\+254|0)[17]\d{8}$/;
-  return phoneRegex.test(phone);
-};
-// Validate password strength
-const isValidPassword = (password: string): boolean => {
-  // At least 8 characters, one uppercase, one lowercase, one number, and one special character
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  return passwordRegex.test(password);
-}

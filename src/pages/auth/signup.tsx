@@ -116,7 +116,8 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
     setError("");
     
     try {
-      await signup({
+      console.log('Submitting signup form...');
+      const response = await signup({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
@@ -127,12 +128,26 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp }) => {
         branchLocation: formData.branchLocation
       });
       
+      console.log('Signup successful:', response);
       setSuccess("Account created successfully! Please check your email for verification.");
       setTimeout(() => {
         navigate("/login");
       }, 3000);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Sign up failed");
+      console.error('Signup form error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Sign up failed";
+      
+      // Provide more detailed error messages
+      let userFriendlyError = errorMessage;
+      if (errorMessage.includes('timeout')) {
+        userFriendlyError = "Connection timeout. Please check your internet connection and try again.";
+      } else if (errorMessage.includes('Network Error') || errorMessage.includes('Unable to connect')) {
+        userFriendlyError = "Unable to connect to the server. Please ensure the backend is running on http://localhost:5000";
+      } else if (errorMessage.includes('email already exists')) {
+        userFriendlyError = "An account with this email already exists. Please use a different email or try logging in.";
+      }
+      
+      setError(userFriendlyError);
     } finally {
       setIsLoading(false);
     }

@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, redirect, url_for
 from config.database import get_db_connection
 
 main_bp = Blueprint('main', __name__)
@@ -35,6 +35,11 @@ def home():
             }
         }
     })
+
+@main_bp.route('/api/')
+def api_root():
+    """Root API endpoint that redirects to API documentation"""
+    return redirect(url_for('api_docs'), code=302)
 
 @main_bp.route('/api/test')
 def test_db():

@@ -3,16 +3,16 @@ from datetime import datetime, timedelta, timezone
 from flask import request, jsonify, current_app
 from functools import wraps
 from config.database import get_db_connection
+from jwt import decode
 import logging
 
-def create_jwt_token(user_id):
-    """Create JWT token"""
-    payload = {
+def generate_token(user_id, role):
+    """Generate JWT token with expiration"""
+    return jwt.encode({
         'user_id': user_id,
-        'exp': datetime.now(timezone.utc) + timedelta(hours=24),
-        'iat': datetime.now(timezone.utc)
-    }
-    return jwt.encode(payload, current_app.config['JWT_SECRET_KEY'], algorithm='HS256')
+        'role': role,
+        'exp': datetime.now(timezone.utc) + timedelta(hours=8) # 8 hours from now
+    }, current_app.config['JWT_SECRET_KEY'], algorithm='HS256')
 
 def verify_jwt_token(token):
     """Verify JWT token"""
@@ -88,3 +88,25 @@ def finance_or_admin_required(f):
             if 'conn' in locals():
                 conn.close()
     return decorated_function
+
+def roles_required(*required_roles):
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            token = request.headers.get('Authorization')
+            if not token:
+                return jsonify({'error': 'Missing token'}), 401
+                
+            try:
+                payload = jwt.decode(token.split()[1], current_app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+                user_role = payload.get('role')
+                
+                if user_role not in required_roles:
+                    return jsonify({'error': 'Insufficient permissions'}), 403
+                    
+            except Exception as e:
+                return jsonify({'error': 'Invalid token'}), 401
+                
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator

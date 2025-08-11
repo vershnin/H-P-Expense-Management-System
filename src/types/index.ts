@@ -14,6 +14,45 @@ export interface User {
   lastLogin?: string;
 }
 
+export interface Expense {
+  id: string;
+  date: string;
+  description: string;
+  category: string;
+  amount: number;
+  floatId: string;
+  location: string;
+  status: 'pending' | 'approved' | 'rejected' | 'paid';
+  currency: string;
+  exchangeRate?: number;
+  receipt?: string;
+  policyViolation?: boolean;
+  violationReason?: string;
+  submittedBy?: number;
+  approvedBy?: number;
+}
+
+export interface Float {
+  id: string;
+  description: string;
+  location: string;
+  initialAmount: number;
+  usedAmount: number;
+  balance: number;
+  status: 'active' | 'low' | 'exhausted';
+  currency: string;
+  createdBy: number;
+}
+
+export interface Policy {
+  id: string;
+  name: string;
+  description: string;
+  amountLimit?: number;
+  category?: string;
+  location?: string;
+}
+
 export interface LoginCredentials {
   email: string;
   password: string;
